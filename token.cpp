@@ -1,57 +1,6 @@
 #include "token.h"
 namespace akan {
-enum Tag {
-  ERR,
-  END,
-  ID,
-  KW_INT,
-  KW_CHAR,
-  KW_VOID,
-  KW_EXTERN,
-  NUM,
-  CH,
-  STR,
-  NOT,
-  LEA,
-  ADD,
-  SUB,
-  MUL,
-  DIV,
-  MOD,
-  INC,
-  DEC,
-  GT,
-  GE,
-  LT,
-  LE,
-  EQU,
-  NEQU,
-  AND,
-  OR,
-  LPAREN,
-  RPAREN,
-  LBRACK,
-  RBRACK,
-  LBRACE,
-  RBRACE,
-  COMMA,
-  COLON,
-  SEMICON,
-  ASSIGN,
-  KW_IF,
-  KW_ELSE,
-  KW_SWITCH,
-  KW_CASE,
-  KW_DEFAULT,
-  KW_WHILE,
-  KW_DO,
-  KW_FOR,
-  KW_BREAK,
-  KW_CONTINUE,
-  KW_RETURN
-};
-}
-const char *tag_name[] = {
+  std::array<const char *,48>tag_name = {
     "Error",  "End of file", "Identifier", "int",    "char",     "void",
     "extern", "Number",      "Character",  "String", "!",        "&",
     "+",      "-",           "*",          "/",      "%",        "++",
@@ -61,18 +10,18 @@ const char *tag_name[] = {
     "=",      "if",          "else",       "switch", "else",     "default",
     "while",  "do",          "for",        "break",  "continue", "return"};
 
-virtual std::string Token::ToString() const { return tag_name[tag_]; }
-virtual std::string Id::ToString() const {
+std::string Token::ToString() const { return tag_name[tag_]; }
+std::string Id::ToString() const {
   return "[" + Token::ToString() + "]:" + name_;
 }
-virtual std::string Str::ToString() const {
+std::string Str::ToString() const {
   return "[" + Token::ToString() + "]:" + str_;
 }
-virtual std::string Num::ToString() const {
+std::string Num::ToString() const {
   return "[" + Token::ToString() + "]:" + std::to_string(val_);
 }
 
-virtual std::string Char::ToString() const {
+std::string Char::ToString() const {
   return "[" + Token::ToString() + "]" + std::string(1, ch_);
 }
 

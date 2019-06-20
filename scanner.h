@@ -1,6 +1,6 @@
 #pragma once
 #include "error.h"
-#define DEBUG
+//#define DEBUG
 
 namespace akan {
 class Scanner {
@@ -10,7 +10,7 @@ class Scanner {
 
   // Characters read
   static constexpr int buf_len_ = 80; // Length of scan buffer
-  char line_[buf_len];
+  char line_[buf_len_];
 
   // Read status
   int line_len_ = 0;  // Length of current line
@@ -19,35 +19,35 @@ class Scanner {
   int line_num_ = 1;  // Row Number
   int col_num_ = 0;   // Column Number
 
-#ifdef(DEBUG)
+#ifdef DEBUG
   // Show character
   static void ShowChar(char ch) {
     switch (ch) {
     case -1:
-      printf("EOF");
+      std::printf("EOF");
       break;
     case '\n':
-      printf("\\n");
+      std::printf("\\n");
       break;
     case '\t':
-      printf("\\t");
+      std::printf("\\t");
       break;
     case ' ':
-      printf("<blank>");
+      std::printf("<blank>");
       break;
     default:
-      printf("%c", ch);
+      std::printf("%c", ch);
     }
-    printf("\t\t<%d>\n", ch);
+    std::printf("\t\t<%d>", ch);
   }
 #endif
 public:
   Scanner(const char *name) {
     file_ = fopen(name, "r");
     if (!file_) {
-      PrintCommonError(FATAL,
-                 "Fail to open the file %s! Please check filename and path.\n",
-                 name);
+      PrintCommonError(
+          FATAL, "Fail to open the file %s! Please check filename and path.\n",
+          name);
       Error::IncrErrorNum();
     }
     file_name_ = name;
@@ -58,7 +58,7 @@ public:
   ~Scanner() {
     if (file_) {
       fclose(file_);
-      file = nullptr;
+      file_ = nullptr;
     }
   }
 
@@ -70,14 +70,14 @@ public:
       line_len_ = fread(line_, 1, buf_len_, file_); // reload buffer data
       if (line_len_ == 0) {                         // no data
         // indicate end of file
-        line_len = 1;
+        line_len_ = 1;
         line_[0] = -1;
         return -1;
       }
       read_pos_ = -1; // restore reading position
     }
     ++read_pos_;
-    char ch = line[read_pos_]; // get the new char
+    char ch = line_[read_pos_]; // get the new char
     if (last_ch_ == '\n') {    // start new line
       ++line_num_;
       col_num_ = 0;
@@ -85,8 +85,8 @@ public:
       ++col_num_;
     }
     last_ch_ = ch;
-#ifdef(DEBUG)
-      ShowChar(ch);
+#ifdef DEBUG
+    ShowChar(ch);
 #endif
     return ch;
   }
@@ -95,5 +95,13 @@ public:
   const char *GetFile() const { return file_name_; }
   int GetLine() const { return line_num_; }
   int GetCol() const { return col_num_; }
-}
+
+  static void MainTest(int argc = 0, char *argv[] = nullptr) {
+    const char file_name[] = "file/arithmetic.c";
+    Scanner scanner(file_name);
+    while (scanner.Scan()!=-1){
+      std::printf("\n");
+    }
+  }
+};
 } // namespace akan
