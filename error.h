@@ -16,9 +16,8 @@ enum LexicalError {
   TOKEN_NO_EXIST
 };
 
-
-//enum SyntaxError;
-//enum SemanticError;
+// enum SyntaxError;
+// enum SemanticError;
 
 template <typename... Args>
 void PrintCommonError(CommonError common_error, Args &&... args) {
@@ -53,8 +52,8 @@ public:
 
   static void IncrErrorNum() { ++error_num_; }
   static void IncrWarnNum() { ++warn_num_; }
-  static int GetErrorNum(){return error_num_;};
-  static int GetWarnNum(){return warn_num_;};
+  static int GetErrorNum() { return error_num_; };
+  static int GetWarnNum() { return warn_num_; };
 
   static void PrintLexicalError(int code);
   static void PrintSyntaxError(int code, Token *t);

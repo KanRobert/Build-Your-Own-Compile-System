@@ -1,7 +1,7 @@
 #pragma once
+#include <array>
 #include <string>
 #include <unordered_map>
-#include<array>
 
 namespace akan {
 enum Tag {
@@ -56,8 +56,15 @@ enum Tag {
 };
 
 class Token {
-public:
+private:
   Tag tag_;
+
+protected:
+  static std::array<const char *, 48> tag_name_;
+
+public:
+  Tag GetTag() { return tag_; }
+  static std::string GetTagName(Tag tag) { return tag_name_[tag]; }
   Token(Tag tag) : tag_(tag) {}
   Token(const Token &) = default;
   Token &operator=(const Token &) = default;
@@ -65,49 +72,78 @@ public:
   virtual ~Token() = default;
 };
 
-class Id : public Token {
-public:
+class Keyword : public Token {
   std::string name_;
-  Id(const std::string &name) : Token(ID), name_(name) {}
-  Id(const Id &) = default;
-  Id &operator=(const Id &) = default;
+  static std::unordered_map<std::string, Tag> keywords_;
+
+public:
+  std::string GetName() { return name_; }
+  Keyword(const std::string &name) : Token(keywords_[name]), name_(name) {}
+  Keyword(const Keyword &) = default;
+  Keyword &operator=(const Keyword &) = default;
   virtual std::string ToString() const override;
-  virtual ~Id() = default;
+  virtual ~Keyword() = default;
+  static bool IsKeyword(const std::string &name);
 };
 
-class Str : public Token {
+class Delimiter : public Token {
+  std::string name_;
+
 public:
-  std::string str_;
-  Str(const std::string &str) : Token(STR), str_(str) {}
-  Str(const Str &) = default;
-  Str &operator=(const Str &) = default;
+  std::string GetName() { return name_; }
+  Delimiter(Tag tag) : Token(tag), name_(tag_name_[tag]) {}
+  Delimiter(const Delimiter &) = default;
+  Delimiter &operator=(const Delimiter &) = default;
   virtual std::string ToString() const override;
-  virtual ~Str() = default;
+  virtual ~Delimiter() = default;
 };
 
-class Num : public Token {
+class Identifier : public Token {
+  std::string name_;
+
 public:
-  int val_;
-  Num(int val) : Token(NUM), val_(val) {}
-  Num(const Num &) = default;
-  Num &operator=(const Num &) = default;
+  std::string GetName() { return name_; }
+  Identifier(const std::string &name) : Token(ID), name_(name) {}
+  Identifier(const Identifier &) = default;
+  Identifier &operator=(const Identifier &) = default;
   virtual std::string ToString() const override;
-  virtual ~Num() = default;
+  virtual ~Identifier() = default;
 };
 
-class Char : public Token {
+class String : public Token {
+  std::string content_;
+
 public:
+  std::string GetContent() { return content_; }
+  String(const std::string &content) : Token(STR), content_(content) {}
+  String(const String &) = default;
+  String &operator=(const String &) = default;
+  virtual std::string ToString() const override;
+  virtual ~String() = default;
+};
+
+class Number : public Token {
+  int value_;
+
+public:
+  int GetValue() { return value_; }
+  Number(int value) : Token(NUM), value_(value) {}
+  Number(const Number &) = default;
+  Number &operator=(const Number &) = default;
+  virtual std::string ToString() const override;
+  virtual ~Number() = default;
+};
+
+class Character : public Token {
   char ch_;
-  Char(char ch) : Token(CH), ch_(ch) {}
-  Char(const Char &) = default;
-  Char &operator=(const Char &) = default;
+
+public:
+  char GetContent() { return ch_; }
+  Character(char ch) : Token(CH), ch_(ch) {}
+  Character(const Character &) = default;
+  Character &operator=(const Character &) = default;
   virtual std::string ToString() const override;
-  virtual ~Char() = default;
+  virtual ~Character() = default;
 };
 
-extern std::array<const char *,48> tag_name;
-extern std::unordered_map<std::string, Tag>
-    keywords;
-// test whether it is a keyword or ID
-Tag GetTag(const std::string &name);
 } // namespace akan

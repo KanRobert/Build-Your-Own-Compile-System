@@ -35,18 +35,19 @@ private:
     return;
   }
 
-  void TokenizeIdOrKeywords() {
+  void TokenizeIdentifierOrKeywords() {
     std::string name;
     do {
       name.push_back(ch_);
       // Eat one more character here
       ch_ = scanner_->Scan();
     } while (std::isalpha(ch_) || ch_ == '_');
-    Tag tag = GetTag(name);
-    if (tag == ID)
-      token_ = std::make_unique<Id>(name);
-    else
-      token_ = std::make_unique<Token>(tag);
+    if (Keyword::IsKeyword(name)) {
+      token_ = std::make_unique<Keyword>(name);
+    } else {
+      token_ = std::make_unique<Identifier>(name);
+    }
+    return;
   }
 
   void TokenizeString() {
@@ -90,7 +91,7 @@ private:
       }
     }
     if (!token_) {
-      token_ = std::make_unique<Str>(str);
+      token_ = std::make_unique<String>(str);
       // Eat one more character here
       Scan();
     }
@@ -155,7 +156,7 @@ private:
       }
     }
     if (!token_)
-      token_ = std::make_unique<Num>(val);
+      token_ = std::make_unique<Number>(val);
   }
 
   void TokenizeCharacter() {
@@ -202,7 +203,7 @@ private:
       c = ch_;
     if (!token_) {
       if (Scan('\'')) {
-        token_ = std::make_unique<Char>(c);
+        token_ = std::make_unique<Character>(c);
         // Eat one more character here
         Scan();
       } else {
@@ -223,17 +224,17 @@ private:
         Scan();
       break;
     case '+':
-      token_ = std::make_unique<Token>(Scan('+') ? INC : ADD);
+      token_ = std::make_unique<Delimiter>(Scan('+') ? INC : ADD);
       // Eat one more character here
       Scan();
       break;
     case '-':
-      token_ = std::make_unique<Token>(Scan('-') ? DEC : SUB);
+      token_ = std::make_unique<Delimiter>(Scan('-') ? DEC : SUB);
       // Eat one more character here
       Scan();
       break;
     case '*':
-      token_ = std::make_unique<Token>(MUL);
+      token_ = std::make_unique<Delimiter>(MUL);
       // Eat one more character here
       Scan();
       break;
@@ -260,8 +261,7 @@ private:
           Error::PrintLexicalError(COMMENT_NO_END);
           token_ = std::make_unique<Token>(ERR);
           return;
-        }
-        else{
+        } else {
           // Eat one more character here
           Scan();
           return;
@@ -269,90 +269,90 @@ private:
       }
       // Division operator
       else {
-        token_ = std::make_unique<Token>(DIV);
+        token_ = std::make_unique<Delimiter>(DIV);
         // Eat one more character here
         Scan();
         return;
       }
     case '%':
-      token_ = std::make_unique<Token>(MOD);
+      token_ = std::make_unique<Delimiter>(MOD);
       // Eat one more character here
       Scan();
       break;
     case '>':
-      token_ = std::make_unique<Token>(Scan('=') ? GE : GT);
+      token_ = std::make_unique<Delimiter>(Scan('=') ? GE : GT);
       // Eat one more character here
       Scan();
       break;
     case '<':
-      token_ = std::make_unique<Token>(Scan('=') ? LE : LT);
+      token_ = std::make_unique<Delimiter>(Scan('=') ? LE : LT);
       // Eat one more character here
       Scan();
       break;
     case '=':
-      token_ = std::make_unique<Token>(Scan('=') ? EQU : ASSIGN);
+      token_ = std::make_unique<Delimiter>(Scan('=') ? EQU : ASSIGN);
       // Eat one more character here
       Scan();
       break;
     case '&':
-      token_ = std::make_unique<Token>(Scan('&') ? AND : LEA);
+      token_ = std::make_unique<Delimiter>(Scan('&') ? AND : LEA);
       // Eat one more character here
       Scan();
       break;
     case '|':
-      token_ = std::make_unique<Token>(Scan('|') ? OR : ERR);
-      if (token_->tag_ == ERR){
+      if (Scan('|')) {
+        token_ = std::make_unique<Delimiter>(OR);
+        // Eat one more character here
+        Scan();
+        return;
+      } else {
+        token_ = std::make_unique<Token>(ERR);
         // Eat one more character here
         Error::PrintLexicalError(OR_NO_PAIR);
         return;
       }
-      else{
-        // Eat one more character here
-        Scan();
-        return;
-      }
     case ',':
-      token_ = std::make_unique<Token>(COMMA);
+      token_ = std::make_unique<Delimiter>(COMMA);
       // Eat one more character here
       Scan();
       break;
     case ':':
-      token_ = std::make_unique<Token>(COLON);
+      token_ = std::make_unique<Delimiter>(COLON);
       // Eat one more character here
       Scan();
       break;
     case ';':
-      token_ = std::make_unique<Token>(SEMICON);
+      token_ = std::make_unique<Delimiter>(SEMICON);
       // Eat one more character here
       Scan();
       break;
     case '(':
-      token_ = std::make_unique<Token>(LPAREN);
+      token_ = std::make_unique<Delimiter>(LPAREN);
       // Eat one more character here
       Scan();
       break;
     case ')':
-      token_ = std::make_unique<Token>(RPAREN);
+      token_ = std::make_unique<Delimiter>(RPAREN);
       // Eat one more character here
       Scan();
       break;
     case '[':
-      token_ = std::make_unique<Token>(LBRACK);
+      token_ = std::make_unique<Delimiter>(LBRACK);
       // Eat one more character here
       Scan();
       break;
     case ']':
-      token_ = std::make_unique<Token>(RBRACK);
+      token_ = std::make_unique<Delimiter>(RBRACK);
       // Eat one more character here
       Scan();
       break;
     case '{':
-      token_ = std::make_unique<Token>(LBRACE);
+      token_ = std::make_unique<Delimiter>(LBRACE);
       // Eat one more character here
       Scan();
       break;
     case '}':
-      token_ = std::make_unique<Token>(RBRACE);
+      token_ = std::make_unique<Delimiter>(RBRACE);
       // Eat one more character here
       Scan();
       break;
@@ -374,10 +374,11 @@ public:
   // function naturally will eat one more character. So in this condition, there
   // is no need to explicitly eat one more;
   std::unique_ptr<Token> Tokenize() {
+    // Use a loop here is to skip the comment and print out all lexical error.
     do {
       SkipWhiteSpace();
       if (std::isalpha(ch_) || ch_ == '_')
-        TokenizeIdOrKeywords();
+        TokenizeIdentifierOrKeywords();
       else if (ch_ == '"')
         TokenizeString();
       else if (std::isdigit(ch_))
@@ -386,7 +387,7 @@ public:
         TokenizeCharacter();
       else
         TokenizeDelimiter();
-      if (token_ && token_->tag_ != ERR)
+      if (token_ && token_->GetTag() != ERR)
         return std::move(token_);
     } while (ch_ != -1);
     return std::make_unique<Token>(END);
@@ -395,15 +396,14 @@ public:
   static void MainTest(int argc = 0, char *argv[] = nullptr) {
     const char file_name[] = "file/arithmetic.c";
     Lexer lexer(std::make_unique<Scanner>(file_name));
-    for (auto token = lexer.Tokenize(); token->tag_ != END;
-         token = lexer.Tokenize()) {
-      std::printf("%d\t", token->tag_);
+    std::unique_ptr<Token> token;
+    do {
+      token = lexer.Tokenize();
+      std::printf("%10s\t", Token::GetTagName(token->GetTag()).c_str());
       fflush(stdout);
-      std::printf("%s\t", tag_name[token->tag_]);
+      std::printf("%20s\n", token->ToString().c_str());
       fflush(stdout);
-      std::printf("%s\n", token->ToString().c_str());
-      fflush(stdout);
-    }
+    } while (token->GetTag() != END);
   }
 };
 } // namespace akan
