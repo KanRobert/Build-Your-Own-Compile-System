@@ -9,13 +9,13 @@ test_lexer :  $(LEXER_OBJECTS)
 test_scanner : $(SCANNER_OBJECTS)
 	$(CXX) -o test_scanner $(SCANNER_OBJECTS)
 
-test_lexer.o : lexer.h
-test_scanner.o : scanner.h
+test_lexer.o : lexer.h error.h scanner.h token.h
+test_scanner.o : scanner.h error.h
 error.o : error.h
 token.o : token.h
 
-lexer.h : error.h scanner.h token.h
-scanner.h : error.h
+# lexer.h : error.h scanner.h token.h
+# scanner.h : error.h
 
 .PHONY : clean
 clean :
