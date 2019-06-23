@@ -54,7 +54,6 @@ enum Tag {
   KW_CONTINUE,
   KW_RETURN
 };
-
 class Token {
 private:
   Tag tag_;
@@ -65,6 +64,9 @@ protected:
 public:
   Tag GetTag() { return tag_; }
   static std::string GetTagName(Tag tag) { return tag_name_[tag]; }
+  static bool IsType(Tag tag) {
+    return tag == KW_INT || tag == KW_CHAR || tag == KW_VOID;
+  }
   Token(Tag tag) : tag_(tag) {}
   Token(const Token &) = default;
   Token &operator=(const Token &) = default;

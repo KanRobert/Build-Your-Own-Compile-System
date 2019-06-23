@@ -2,7 +2,7 @@
 #include "scanner.h"
 
 namespace akan {
-Scanner *Error::scanner_ = nullptr;
+std::shared_ptr<Scanner> Error::scanner_ = nullptr;
 int Error::error_num_ = 0;
 int Error::warn_num_ = 0;
 
@@ -19,6 +19,9 @@ void Error::PrintLexicalError(int code) {
   IncrErrorNum();
   printf("%s<line %d, col %d> LexicalError: %s.\n", scanner_->GetFile(),
          scanner_->GetLine(), scanner_->GetCol(), lexical_error_name[code]);
+}
+
+void Error::PrintSyntaxError(int code, std::shared_ptr<Token> token){
 }
 
 } // namespace akan

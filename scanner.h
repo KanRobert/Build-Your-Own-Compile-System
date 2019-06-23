@@ -1,7 +1,7 @@
 #pragma once
 #include "error.h"
 #include <memory>
-//#define DEBUG
+#include <string>
 
 namespace akan {
 class Scanner {
@@ -26,28 +26,28 @@ class Scanner {
   int line_num_ = 1;  // Row Number
   int col_num_ = 0;   // Column Number
 
-#ifdef DEBUG
-  // Show character
-  static void ShowChar(char ch) {
+  // Debug helper
+  static std::string ShowChar(char ch) {
+    char s[16];
     switch (ch) {
     case -1:
-      std::printf("EOF");
+      std::sprintf(s, "%s <%d>", "EOF", ch);
       break;
     case '\n':
-      std::printf("\\n");
+      std::sprintf(s, "%s <%d>", "\\n", ch);
       break;
     case '\t':
-      std::printf("\\t");
+      std::sprintf(s, "%s <%d>", "\\t", ch);
       break;
     case ' ':
-      std::printf("<blank>");
+      std::sprintf(s, "%s <%d>", "blank", ch);
       break;
     default:
-      std::printf("%c", ch);
+      std::sprintf(s, "%c <%d>", ch, ch);
     }
-    std::printf("\t\t<%d>", ch);
+    return std::string(s);
   }
-#endif
+
 public:
   Scanner(const char *name)
       : file_name_(name), file_(std::fopen(name, "r"), &CloseFile) {
@@ -73,6 +73,7 @@ public:
         // indicate end of file
         line_len_ = 1;
         line_[0] = -1;
+        last_ch_ = -1;
         return -1;
       }
       read_pos_ = -1; // restore reading position
@@ -86,9 +87,6 @@ public:
       ++col_num_;
     }
     last_ch_ = ch;
-#ifdef DEBUG
-    ShowChar(ch);
-#endif
     return ch;
   }
 
@@ -97,12 +95,21 @@ public:
   int GetLine() const { return line_num_; }
   int GetCol() const { return col_num_; }
 
-  static void MainTest(int argc = 0, char *argv[] = nullptr) {
-    const char file_name[] = "file/arithmetic.c";
+private:
+  static void TestImpl(const char *file_name) {
     Scanner scanner(file_name);
-    while (scanner.Scan() != -1) {
-      std::printf("\n");
-    }
+    char ch;
+    do {
+      ch = scanner.Scan();
+      std::printf("%8s\tline: %3d\tcol: %3d\n", ShowChar(ch).c_str(),
+                  scanner.GetLine(), scanner.GetCol());
+    } while (ch != -1);
+    std::printf("Finish the scan for %s\n", file_name);
+  }
+
+public:
+  static void MainTest(int argc = 0, char *argv[] = nullptr) {
+    TestImpl("file/arithmetic.c");
   }
 };
 } // namespace akan

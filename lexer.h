@@ -1,3 +1,4 @@
+#pragma once
 #include "error.h"
 #include "scanner.h"
 #include "token.h"
@@ -8,9 +9,10 @@
 namespace akan {
 class Lexer {
 private:
-  std::unique_ptr<Scanner> scanner_;
+  std::shared_ptr<Scanner> scanner_;
   char ch_ = ' ';
-  std::unique_ptr<Token> token_;
+  std::shared_ptr<Token> token_;
+
   void SkipWhiteSpace() {
     while (ch_ == ' ' || ch_ == '\n' || ch_ == '\t') {
       ch_ = scanner_->Scan();
@@ -43,9 +45,9 @@ private:
       ch_ = scanner_->Scan();
     } while (std::isalpha(ch_) || ch_ == '_');
     if (Keyword::IsKeyword(name)) {
-      token_ = std::make_unique<Keyword>(name);
+      token_ = std::make_shared<Keyword>(name);
     } else {
-      token_ = std::make_unique<Identifier>(name);
+      token_ = std::make_shared<Identifier>(name);
     }
     return;
   }
@@ -74,9 +76,9 @@ private:
         case '\n':
           break;
         case -1:
-          // Ear one more character here
+          // Eat one more character here
           Error::PrintLexicalError(STR_NO_R_QUOTE);
-          token_ = std::make_unique<Token>(ERR);
+          token_ = std::make_shared<Token>(ERR);
           return;
         default:
           str.push_back(ch_);
@@ -84,17 +86,15 @@ private:
       } else if (ch_ == '\n' || ch_ == -1) {
         // Eat one more character here
         Error::PrintLexicalError(STR_NO_R_QUOTE);
-        token_ = std::make_unique<Token>(ERR);
+        token_ = std::make_shared<Token>(ERR);
         return;
       } else {
         str.push_back(ch_);
       }
     }
-    if (!token_) {
-      token_ = std::make_unique<String>(str);
-      // Eat one more character here
-      Scan();
-    }
+    token_ = std::make_shared<String>(str);
+    // Eat one more character here
+    Scan();
   }
 
   void TokenizeNumber() {
@@ -126,7 +126,7 @@ private:
         } else {
           // Eat one more character here
           Error::PrintLexicalError(HEX_NUM_NO_ENTITY);
-          token_ = std::make_unique<Token>(ERR);
+          token_ = std::make_shared<Token>(ERR);
           return;
         }
       }
@@ -142,7 +142,7 @@ private:
         } else {
           // Eat oone more character here
           Error::PrintLexicalError(BI_NUM_NO_ENTITY);
-          token_ = std::make_unique<Token>(ERR);
+          token_ = std::make_shared<Token>(ERR);
           return;
         }
       }
@@ -155,8 +155,7 @@ private:
         } while (ch_ >= '0' && ch_ <= '7');
       }
     }
-    if (!token_)
-      token_ = std::make_unique<Number>(val);
+    token_ = std::make_shared<Number>(val);
   }
 
   void TokenizeCharacter() {
@@ -179,7 +178,7 @@ private:
       else if (ch_ == -1 || ch_ == '\n') {
         // Eat one more character here
         Error::PrintLexicalError(CHAR_NO_R_QUOTE);
-        token_ = std::make_unique<Token>(ERR);
+        token_ = std::make_shared<Token>(ERR);
         return;
       }
       // Non-escape character
@@ -188,30 +187,30 @@ private:
     } else if (ch_ == -1 || ch_ == '\n') {
       // Eat one more character here
       Error::PrintLexicalError(CHAR_NO_R_QUOTE);
-      token_ = std::make_unique<Token>(ERR);
+      token_ = std::make_shared<Token>(ERR);
       return;
     }
     // No entity
     else if (ch_ == '\'') {
       // Eat one more character here
       Error::PrintLexicalError(NOT_SUPPORT_NULL_CHAR);
-      token_ = std::make_unique<Token>(ERR);
+      token_ = std::make_shared<Token>(ERR);
       return;
     }
     // Non-escape character
-    else
+    else {
       c = ch_;
-    if (!token_) {
-      if (Scan('\'')) {
-        token_ = std::make_unique<Character>(c);
-        // Eat one more character here
-        Scan();
-      } else {
-        // Eat one more character here
-        Error::PrintLexicalError(CHAR_NO_R_QUOTE);
-        token_ = std::make_unique<Token>(ERR);
-        return;
-      }
+    }
+    if (Scan('\'')) {
+      token_ = std::make_shared<Character>(c);
+      // Eat one more character here
+      Scan();
+      return;
+    } else {
+      // Eat one more character here
+      Error::PrintLexicalError(CHAR_NO_R_QUOTE);
+      token_ = std::make_shared<Token>(ERR);
+      return;
     }
   }
 
@@ -224,17 +223,17 @@ private:
         Scan();
       break;
     case '+':
-      token_ = std::make_unique<Delimiter>(Scan('+') ? INC : ADD);
+      token_ = std::make_shared<Delimiter>(Scan('+') ? INC : ADD);
       // Eat one more character here
       Scan();
       break;
     case '-':
-      token_ = std::make_unique<Delimiter>(Scan('-') ? DEC : SUB);
+      token_ = std::make_shared<Delimiter>(Scan('-') ? DEC : SUB);
       // Eat one more character here
       Scan();
       break;
     case '*':
-      token_ = std::make_unique<Delimiter>(MUL);
+      token_ = std::make_shared<Delimiter>(MUL);
       // Eat one more character here
       Scan();
       break;
@@ -246,6 +245,8 @@ private:
           // Eat one more character here
           Scan();
         }
+        // make pointer null if match a comment
+        token_ = nullptr;
         return;
       }
       // Multi-line comment
@@ -259,121 +260,125 @@ private:
         if (ch_ == -1) {
           // Eat one more character here
           Error::PrintLexicalError(COMMENT_NO_END);
-          token_ = std::make_unique<Token>(ERR);
+          token_ = std::make_shared<Token>(ERR);
           return;
         } else {
           // Eat one more character here
           Scan();
+          // make pointer null if match a comment
+          token_ = nullptr;
           return;
         }
       }
       // Division operator
       else {
-        token_ = std::make_unique<Delimiter>(DIV);
+        token_ = std::make_shared<Delimiter>(DIV);
         // Eat one more character here
         Scan();
         return;
       }
     case '%':
-      token_ = std::make_unique<Delimiter>(MOD);
+      token_ = std::make_shared<Delimiter>(MOD);
       // Eat one more character here
       Scan();
       break;
     case '>':
-      token_ = std::make_unique<Delimiter>(Scan('=') ? GE : GT);
+      token_ = std::make_shared<Delimiter>(Scan('=') ? GE : GT);
       // Eat one more character here
       Scan();
       break;
     case '<':
-      token_ = std::make_unique<Delimiter>(Scan('=') ? LE : LT);
+      token_ = std::make_shared<Delimiter>(Scan('=') ? LE : LT);
       // Eat one more character here
       Scan();
       break;
     case '=':
-      token_ = std::make_unique<Delimiter>(Scan('=') ? EQU : ASSIGN);
+      token_ = std::make_shared<Delimiter>(Scan('=') ? EQU : ASSIGN);
       // Eat one more character here
       Scan();
       break;
     case '&':
-      token_ = std::make_unique<Delimiter>(Scan('&') ? AND : LEA);
+      token_ = std::make_shared<Delimiter>(Scan('&') ? AND : LEA);
       // Eat one more character here
       Scan();
       break;
     case '|':
       if (Scan('|')) {
-        token_ = std::make_unique<Delimiter>(OR);
+        token_ = std::make_shared<Delimiter>(OR);
         // Eat one more character here
         Scan();
         return;
       } else {
-        token_ = std::make_unique<Token>(ERR);
+        token_ = std::make_shared<Token>(ERR);
         // Eat one more character here
         Error::PrintLexicalError(OR_NO_PAIR);
         return;
       }
     case ',':
-      token_ = std::make_unique<Delimiter>(COMMA);
+      token_ = std::make_shared<Delimiter>(COMMA);
       // Eat one more character here
       Scan();
       break;
     case ':':
-      token_ = std::make_unique<Delimiter>(COLON);
+      token_ = std::make_shared<Delimiter>(COLON);
       // Eat one more character here
       Scan();
       break;
     case ';':
-      token_ = std::make_unique<Delimiter>(SEMICON);
+      token_ = std::make_shared<Delimiter>(SEMICON);
       // Eat one more character here
       Scan();
       break;
     case '(':
-      token_ = std::make_unique<Delimiter>(LPAREN);
+      token_ = std::make_shared<Delimiter>(LPAREN);
       // Eat one more character here
       Scan();
       break;
     case ')':
-      token_ = std::make_unique<Delimiter>(RPAREN);
+      token_ = std::make_shared<Delimiter>(RPAREN);
       // Eat one more character here
       Scan();
       break;
     case '[':
-      token_ = std::make_unique<Delimiter>(LBRACK);
+      token_ = std::make_shared<Delimiter>(LBRACK);
       // Eat one more character here
       Scan();
       break;
     case ']':
-      token_ = std::make_unique<Delimiter>(RBRACK);
+      token_ = std::make_shared<Delimiter>(RBRACK);
       // Eat one more character here
       Scan();
       break;
     case '{':
-      token_ = std::make_unique<Delimiter>(LBRACE);
+      token_ = std::make_shared<Delimiter>(LBRACE);
       // Eat one more character here
       Scan();
       break;
     case '}':
-      token_ = std::make_unique<Delimiter>(RBRACE);
+      token_ = std::make_shared<Delimiter>(RBRACE);
       // Eat one more character here
       Scan();
       break;
     case -1:
+      token_ = std::make_shared<Token>(END);
       break;
     default:
-      token_ = std::make_unique<Token>(ERR);
+      token_ = std::make_shared<Token>(ERR);
       // Eat one more character here
       Error::PrintLexicalError(TOKEN_NO_EXIST);
     }
   }
 
 public:
-  Lexer(std::unique_ptr<Scanner> scanner) : scanner_(std::move(scanner)) {}
+  Lexer(std::shared_ptr<Scanner> scanner) : scanner_(scanner) {
+    Error::SetScanner(scanner);
+  }
   Lexer(const Lexer &) = delete;
   Lexer &operator=(const Lexer &) = delete;
   ~Lexer() = default;
-  // All Tokenize function should eat one more character. If an error occurs,
-  // function naturally will eat one more character. So in this condition, there
-  // is no need to explicitly eat one more;
-  std::unique_ptr<Token> Tokenize() {
+  // All Tokenize function should eat one more character except that an error
+  // occurs or scanner reaches the end of the file.
+  std::shared_ptr<Token> Tokenize() {
     // Use a loop here is to skip the comment and print out all lexical error.
     do {
       SkipWhiteSpace();
@@ -388,22 +393,31 @@ public:
       else
         TokenizeDelimiter();
       if (token_ && token_->GetTag() != ERR)
-        return std::move(token_);
+        return token_;
     } while (ch_ != -1);
-    return std::make_unique<Token>(END);
+    return std::make_shared<Token>(END);
   }
 
-  static void MainTest(int argc = 0, char *argv[] = nullptr) {
-    const char file_name[] = "file/arithmetic.c";
-    Lexer lexer(std::make_unique<Scanner>(file_name));
-    std::unique_ptr<Token> token;
+private:
+  // Debug helper
+  static void TestImpl(const char *file_name) {
+    Lexer lexer(std::make_shared<Scanner>(file_name));
+    std::shared_ptr<Token> token;
     do {
       token = lexer.Tokenize();
       std::printf("%10s\t", Token::GetTagName(token->GetTag()).c_str());
-      fflush(stdout);
+      std::fflush(stdout);
       std::printf("%20s\n", token->ToString().c_str());
-      fflush(stdout);
+      std::fflush(stdout);
     } while (token->GetTag() != END);
+    std::printf("Finish the lex for %s\n", file_name);
+  }
+
+public:
+  static void MainTest(int argc = 0, char *argv[] = nullptr) {
+    TestImpl("file/arithmetic.c");
+    printf("\n");
+    TestImpl("file/intended_error.c");
   }
 };
 } // namespace akan

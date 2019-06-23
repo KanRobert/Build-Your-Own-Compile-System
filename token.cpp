@@ -1,7 +1,7 @@
 #include "token.h"
 namespace akan {
 std::array<const char *, 48> Token::tag_name_ = {
-    "Error",  "End of file", "Identifier", "int",    "char",     "void",
+    "ERROR",  "EOF", "ID", "int",    "char",     "void",
     "extern", "Number",      "Character",  "String", "!",        "&",
     "+",      "-",           "*",          "/",      "%",        "++",
     "--",     ">",           ">=",         "<",      "<=",       "==",
